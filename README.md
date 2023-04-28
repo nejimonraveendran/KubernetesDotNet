@@ -14,7 +14,8 @@
 
 ### K8s Web UI Dashboard
 setup: https://github.com/DanWahlin/DockerAndKubernetesCourseCode/tree/main/samples/dashboard-security
-localhost:8001
+
+Dashboard link: http://localhost:8001
 
 ### General K8s commands
 ```bash
