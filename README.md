@@ -2,15 +2,15 @@
 
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
-- **Master**: One or more nodes that control the nodes.
-- **Pod**: An ephemeral wrapper around one or more containers.  Pods can be scaled in or out.  
-- **Service**: A more permanent IP address as well as load balancer that can work as an entrypoint into the pods.
+- **Master**: One or more machines that control the nodes.
+- **Pod**: A wrapper around one or more containers.  Pods can be scaled in or out.  
+- **Service**: A static IP address as well as load balancer that works as a single traffic entrypoint into the pods.
 - **Ingress**: A DNS entry that routes traffic to a service so that the pod can be referenced using DNS.
 - **ConfigMap**: Confguration data such as URLs, connection string, etc.
 - **Secrets**: Same as config map but meant for storing secrets such as DB credentials, certificates, etc.
 - **Volume**: Storage for persistence of data outside K8s cluster (host, NFS, cloud, etc.)
-- **StatefulSet**: A pod intended for stateful workloads like database that can be scaled up or down.
-- **Deployment**: Pod deployment object.
+- **StatefulSet**: A pod deployment intended for stateful workloads like database.
+- **Deployment**: A pod deployment for stateless workloads.
 
 ### K8s Web UI Dashboard
 setup: https://github.com/DanWahlin/DockerAndKubernetesCourseCode/tree/main/samples/dashboard-security
@@ -85,6 +85,9 @@ kubectl describe pvc <persistent-volume-claim-name>
 kubectl get sc <storage-class-name>
 kubectl describe sc <storage-class-name>
 
+#create secret
+kubectl create secret generic <secret-name> --from-literal=<key>=<value>
+eg: kubectl create secret generic mssqlsecret --from-literal=SA_PASSWORD="Admin@123"
 ```
 
 
