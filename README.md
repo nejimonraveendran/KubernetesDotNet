@@ -8,7 +8,7 @@
 - **Ingress**: A DNS entry that routes traffic to a service so that the pod can be referenced using DNS.
 - **ConfigMap**: Confguration data such as URLs, connection string, etc.
 - **Secrets**: Same as config map but meant for storing secrets such as DB credentials, certificates, etc.
-- **Volume**: Storage for persistence of data outside K8s cluster (host, NFS, cloud, etc.)
+- **Volume**: Storage for persistence of data outside K8s (host, NFS, cloud, etc.)
 - **StatefulSet**: A pod deployment intended for stateful workloads like database.
 - **Deployment**: A pod deployment for stateless workloads.
 
