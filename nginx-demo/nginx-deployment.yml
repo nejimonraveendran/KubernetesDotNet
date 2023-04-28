@@ -1,0 +1,164 @@
+
+#define a deployment. operations:
+#kubectl get deployment my-nginx-deployment
+#kubectl describe deployment my-nginx-deployment
+#kubectl delete deployment my-nginx-deployment
+#kubectl get pods
+#kubectl describe pod <pod-name>
+#kubectl exec <pod-name> -it -- sh
+#kubectl logs <pod-name>
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx-deployment
+  labels:
+    deployment-name: my-nginx-deployment
+spec: #deployment spec
+  replicas: 1
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      pod-name: my-nginx-pod  #pod label to match (defined below)
+  strategy:
+    type: RollingUpdate  #other: Recreate
+  template:    #define pod template:
+    metadata:
+      labels:
+        pod-name: my-nginx-pod #pod label (to be matched by the deployment matchLabels under deployment spec)
+    spec: #pod spec
+      containers:
+      - name: my-nginx-container  #container name
+        image: nginx:alpine #container image to be used
+        resources: #specify resource limits for each container
+          limits:
+            memory: "128Mi" #128 MB
+            cpu: "500m" #200 milli-cpu (0.2 or 20% of cpu)
+        ports:
+        - containerPort: 80
+        livenessProbe:
+            httpGet:
+              path: /index.html
+              scheme: HTTP
+              port: 80
+            initialDelaySeconds: 15
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            terminationGracePeriodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /index.html
+            scheme: HTTP
+            port: 80
+          initialDelaySeconds: 15
+          timeoutSeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts: #all volume mounts
+          - name: my-nginx-emptydir-vol #volume name defined under volumes
+            mountPath: /var/local/my-nginx/scratchspace #mount to this path
+          - name: my-nginx-host-vol #volume name defined under volumes
+            mountPath: /var/local/my-nginx/hostspace #mount to this path
+          - name: my-nginx-ext-vol #volume name defined under volumes
+            mountPath: /var/local/my-nginx/extspace #mount to this path  
+      volumes:
+      - name: my-nginx-emptydir-vol
+        emptyDir:  #temporary storage for the duration of the pod lifetime (useful for temporary in-pod work)
+          sizeLimit: 10Mi
+      - name: my-nginx-host-vol
+        hostPath:  #storage allocation on the current node. Useful only for local development (dont use in prod because pods may get scheduled on different nodes)
+          type: DirectoryOrCreate # create if not exists
+          path: /run/desktop/mnt/host/c/tmp/k8sapps/appdata  #virtual path in Docker Desktop Kubernetes pointing to Windows C:\tmp\k8sapps\appdata path
+      - name: my-nginx-ext-vol
+        persistentVolumeClaim: #persistent volume, either on the current node or external. 
+          claimName: my-nginx-local-pvc
+---
+
+#define a service. operations:
+#kubectl get service my-nginx-service
+#kubectl describe service my-nginx-service
+#kubectl delete service my-nginx-service
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-service #added as a DNS entry in the k8s cluster
+spec:
+  #types: 
+  #1) ClusterIP: scoped within the cluster (for access between pods)  
+  #2) NodePort: scoped at the node. Allowed range: 30000 - 32767.  If not specified, a random port assigned.  
+  #3) LoadBalancer: scoped external to node. It sets up a NodePort automatically behind the scenes. 
+  #4) ExternalService: outbound alias to call external services (eg. a third-party / customer API)
+  type: LoadBalancer  #change this to NodePort.  Then you can access the site at http://127.0.0.1:31000
+  selector:
+    pod-name: my-nginx-pod #match the pod label to route traffic to
+  ports:
+  - name: my-nginx-http-port #just a name given to the port
+    protocol: TCP
+    port: 8080 #port opened to external world (site is accessed like: http://localhost:8080)
+    targetPort: 80 #container's port
+    nodePort: 31000 #manually assign a node port in the range 30000-32767 (site is accessed like: http://127.0.0.1:31000)
+
+---
+
+#define a storage class. operations:
+#kubectl get sc my-nginx-local-sc
+#kubectl describe sc my-nginx-local-sc
+#kubectl delete sc my-nginx-local-sc
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: my-nginx-local-sc #name given to the storage class. 
+provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+#define a persistent volume. operations:
+#kubectl get pv my-nginx-local-pv
+#kubectl describe pv my-nginx-local-pv
+#kubectl delete pv my-nginx-local-pv
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-nginx-local-pv #name given to the persistent volume
+spec:
+  capacity:
+    storage: 10Mi #specify size
+  volumeMode: Filesystem #other possible values: Block
+  accessModes:
+  - ReadWriteOnce  #1) ReadWriteOnce: mounted as read/write by all pods running on a single node.  2) ReadOnlyMany: mounted as read only by many nodes. 3) ReadWriteMany: mounted as read/write by many nodes.  4) ReadWriteOncePod: mounted as read/write by single Pod
+  persistentVolumeReclaimPolicy: Retain #1) Retain: data to be manually deleted. 2) Delete: Remove the volume
+  storageClassName: my-nginx-local-sc #storage class name defined under storage class definition above.
+  local:
+    path: /run/desktop/mnt/host/c/tmp/k8sapps/pvdata #virtual path that points to C:\temp\k8sapps\pvdata on Windows. This path must pre-exist on the host (Windows), i.e., won't be auto-created.
+  nodeAffinity:  #this is required for "local" persistent volumes
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - docker-desktop #the node affinity is attached to the VM named "docker-desktop"
+
+---
+
+#define a persistent volume claim. operations:
+#kubectl get pvc my-nginx-local-pvc
+#kubectl describe pvc my-nginx-local-pvc
+#kubectl delete pvc my-nginx-local-pvc
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: my-nginx-local-pvc #name given to the persistent volume claim
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: my-nginx-local-sc #storage class name defined under storage class definition above.
+  resources:
+    requests:
+      storage: 10Mi #specify a size
+  
