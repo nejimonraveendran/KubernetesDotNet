@@ -1,4 +1,4 @@
-# Kubernetes .NET Development
+# Kubernetes .NET Development Using Docker Desktop
 
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
