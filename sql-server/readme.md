@@ -24,7 +24,7 @@ kubectl get pods #make a note of the pod name returned
 kubectl exec <pod-name> -it -- sh 
 
 #view logs
-kubectl logs <pood-name>
+kubectl logs <pod-name>
 
 ```
 
