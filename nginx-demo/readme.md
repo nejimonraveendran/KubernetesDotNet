@@ -7,6 +7,12 @@ This yaml file demonstrates the following:
 - storage class, persistent volume, persistent volume claim
 - services (load balancer)
 
+Deploy the yaml with the following command:
+
+```bash
+kubectl apply -f nginx-deployment.yml
+```
+
 To access NGINX home page, open in browser:  http://localhost:8080
 
 To shell into the Alpine pod, use: 
