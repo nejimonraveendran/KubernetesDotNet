@@ -8,5 +8,12 @@ This yaml file demonstrates the following:
 - services (load balancer)
 
 To access NGINX home page, open in browser:  http://localhost:8080
-To shell into the Alpine pod, use: ``` kubectl delete service my-nginx-service ```
+
+To shell into the Alpine pod, use: 
+``` 
+kubectl get pods #make a note of the pod name returned
+
+kubectl exec <pod-name> -it -- sh 
+
+```
 
