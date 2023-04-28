@@ -1,0 +1,85 @@
+# use this file only locally to spin up sql server instance.
+# Create a secret in K8s cluster to hold MSSQL password:  
+# kubectl create secret generic mssqlsecret --from-literal=SA_PASSWORD="Admin@123"
+# kubectl apply -f sqlserver-statefulset.yml
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mssql-sset
+  labels:
+    sset-name: mssql-sset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      pod-name: mssql-pod
+  serviceName: mssql-service
+  template:
+    metadata:
+      labels:
+        pod-name: mssql-pod
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: mssql-container
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        resources:
+          requests:
+            memory: "2G"
+            cpu: "2000m"
+          limits:
+            memory: "2G"
+            cpu: "2000m"
+        ports:
+        - containerPort: 1433
+        securityContext:
+          runAsUser: 0 #0 = run as root.  This simplifies the permission to the local volumes
+        volumeMounts:
+        - name: mssql-data-volume
+          mountPath: /var/opt/mssql/data
+        - name: mssql-log-volume
+          mountPath: /var/opt/mssql/log
+        - name: mssql-secrets-volume
+          mountPath: /var/opt/mssql/secrets
+        env:
+        - name: MSSQL_PID
+          value: "Developer"
+        - name: ACCEPT_EULA
+          value: "Y"
+        - name: MSSQL_SA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mssqlsecret
+              key: SA_PASSWORD
+      volumes:
+      - name: mssql-data-volume
+        hostPath:
+          path: /run/desktop/mnt/host/c/tmp/k8sapps/sql/data
+          type: DirectoryOrCreate
+      - name: mssql-log-volume
+        hostPath:
+          path: /run/desktop/mnt/host/c/tmp/k8sapps/sql/log
+          type: DirectoryOrCreate
+      - name: mssql-secrets-volume
+        hostPath:
+          path: /run/desktop/mnt/host/c/tmp/k8sapps/sql/secrets
+          type: DirectoryOrCreate
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql-service
+spec:
+  type: LoadBalancer
+  selector:
+    pod-name: mssql-pod
+  ports:
+  - name: mssql-port
+    protocol: TCP
+    port: 1433
+    targetPort: 1433
+
+---

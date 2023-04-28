@@ -1,9 +1,9 @@
 ### Alpine NGINX Demo
 
 This yaml file demonstrates the following:
-- deployment
+- pod deployment
 - liveness and readiness probes
-- volumes and volume mounts
+- volumes and volume mounts (empty dir, host path, persistent)
 - storage class, persistent volume, persistent volume claim
 - services (load balancer)
 
