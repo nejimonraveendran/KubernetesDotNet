@@ -1,0 +1,155 @@
+# this file is used only for deployment into Kubernetes.  For development, use the included docker compose
+# in the solution directory, issue following commands (on Windows):
+# > kubectl apply -f sqlserver-statefulset.yml
+# > CD dal
+# > dotnet ef database update
+# > CD ..
+# > docker build --target final -t webapi:v1 -f webapi/Dockerfile .
+# > docker build --target final -t demonapp:v1 -f demonapp/Dockerfile .
+# > kubectl apply -f app-deployment.yml
+
+#open in browser: http://localhost:8082/swagger/index.html
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi-deployment
+  labels:
+    deployment-name: webapi-deployment
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      pod-name: webapi-pod  #pod label to match (defined below)
+  template:    #define pod template:
+    metadata:
+      labels:
+        pod-name: webapi-pod
+    spec:
+      containers:
+      - name: webapi-container  #container name
+        image: webapi:v1 #image to be used
+        resources:
+          limits:
+            memory: "128Mi" #128 MB
+            cpu: "500m" #200 milli-cpu (0.2 or 20% of cpu)
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: DBCONNECTION
+          value: Server=mssql-service;Database=MyDb;User Id=sa;Password=Admin@123;
+        livenessProbe:
+            httpGet:
+              path: /
+              scheme: HTTP
+              port: 80
+            initialDelaySeconds: 15
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            terminationGracePeriodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            scheme: HTTP
+            port: 80
+          initialDelaySeconds: 15
+          timeoutSeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+          - name: webapi-vol #volume name defined under volumes
+            mountPath: /var/local/mylinuxapp/webapi 
+      volumes:
+      - name: webapi-vol
+        emptyDir:  #temporary storage for the duration of the pod lifetime
+          sizeLimit: 10Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapi-service #added as a DNS entry in the k8s cluster
+spec:
+  #types: 
+  #1) ClusterIP: scoped within the cluster (for access between pods)  
+  #2) NodePort: scoped at the node. Allowed range: 30000 - 32767.  If not specified, a random port assigned.  
+  #3) LoadBalancer: scoped external to node. It sets up a NodePort automatically behind the scenes. 
+  #4) ExternalService: outbound alias to call external services (eg. a third-party / customer API)
+  type: LoadBalancer  #change this to NodePort.  Then you can access the site at http://127.0.0.1:31000
+  selector:
+    pod-name: webapi-pod #match the pod label to route traffic to
+  ports:
+  - name: webapi-http-port #just a name given to the port
+    protocol: TCP
+    port: 8082 #port opened to external world (site is accessed like: http://localhost:8082)
+    targetPort: 80 #container's port
+---
+
+#demonapp deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demonapp-deployment
+  labels:
+    deployment-name: demonapp-deployment
+spec:
+  replicas: 1
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      pod-name: demonapp-pod  #pod label to match (defined below)
+  template:    #define pod template:
+    metadata:
+      labels:
+        pod-name: demonapp-pod
+    spec:
+      containers:
+      - name: demonapp-container  #container name
+        image: demonapp:v1 #image to be used
+        resources:
+          limits:
+            memory: "128Mi" #128 MB
+            cpu: "500m" #200 milli-cpu (0.2 or 20% of cpu)
+        ports:
+        - containerPort: 80
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: Development
+        - name: DBCONNECTION
+          value: Server=mssql-service;Database=MyDb;User Id=sa;Password=Admin@123;
+        - name: PRODUCTSAPIURL
+          value: http://webapi-service:8082/Products
+        livenessProbe:
+            exec:
+              command:
+              - cat
+              - /app/healthprobe.txt
+            initialDelaySeconds: 15
+            timeoutSeconds: 3
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+            terminationGracePeriodSeconds: 30
+        readinessProbe:
+          exec:
+            command:
+            - cat
+            - /app/healthprobe.txt
+          initialDelaySeconds: 15
+          timeoutSeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+          - name: demonapp-vol #volume name defined under volumes
+            mountPath: /var/local/mylinuxapp/demonapp 
+      volumes:
+      - name: demonapp-vol
+        emptyDir:  #temporary storage for the duration of the pod lifetime
+          sizeLimit: 10Mi
