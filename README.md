@@ -1,5 +1,26 @@
 # Kubernetes .NET Development Using Docker Desktop
 
+### Install K3S in WSL (tiny version of K8s)
+
+First check:
+```
+ps -p 1 -o comm=
+```
+
+If you see **systemd**, good.  If not, enable it by editing wsl.conf
+
+```
+sudo nano /etc/wsl.conf
+```
+
+Then add:
+
+```
+[boot]
+systemd=true
+```
+
+
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
 - **Master**: One or more machines that control the nodes.
