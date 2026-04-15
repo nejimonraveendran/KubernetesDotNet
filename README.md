@@ -20,6 +20,18 @@ Then add:
 systemd=true
 ```
 
+To install K3s, use the command:
+
+```
+curl -sfL https://get.k3s.io | sh -
+```
+
+After installation, exit the prompt and restart wsl:
+
+```
+wsl --shutdown
+```
+
 
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
