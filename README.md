@@ -80,6 +80,22 @@ Then, from Windows, access the site as:
 http://localhost:8080
 ```
 
+
+### Avoiding sudo
+
+By default, k3s needs sudo before every command.  To avoid this, do the following:
+
+```
+sudo cat /etc/rancher/k3s/k3s.yaml > ~/.kube/config
+sudo chown $USER:$USER ~/.kube/config
+chmod 600 ~/.kube/config
+
+echo 'export KUBECONFIG=$HOME/.kube/config' >> ~/.bashrc
+source ~/.bashrc
+```
+
+
+
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
 - **Master**: One or more machines that control the nodes.
