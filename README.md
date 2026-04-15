@@ -86,6 +86,7 @@ http://localhost:8080
 By default, k3s needs sudo before every command.  To avoid this, do the following:
 
 ```
+sudo mkdir -p ~/.kube
 sudo cat /etc/rancher/k3s/k3s.yaml > ~/.kube/config
 sudo chown $USER:$USER ~/.kube/config
 chmod 600 ~/.kube/config
