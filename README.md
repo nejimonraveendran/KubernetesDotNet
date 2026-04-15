@@ -125,8 +125,17 @@ kubectl cluster-info
 #list everything on the cluster
 kubectl get all 
 
+#list all nodes
+kubectl get nodes
+kubectl get node
+
 #list all pods
 kubectl get pods
+kubectl get pod
+
+#list all services
+kubectl get services
+kubectl get svc
 
 #describe pod
 kubectl describe pod <pod-name>
