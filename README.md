@@ -32,6 +32,53 @@ After installation, exit the prompt and restart wsl:
 wsl --shutdown
 ```
 
+### Testing installation and accessing site from Windows
+In wsl, issue command:
+
+```
+sudo kubectl create deployment nginx --image=nginx
+sudo kubectl expose deployment nginx --type=NodePort --port 80
+sudo kubectl get svc
+```
+
+The above will print nginx port something like:
+
+```
+NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)        AGE
+kubernetes   ClusterIP   10.43.0.1     <none>        443/TCP        18m
+nginx        NodePort    10.43.33.19   <none>        80:30276/TCP   6m50s
+```
+
+Then, test within wsl:
+
+```
+curl localhost:30276
+```
+
+If the above returns response, the service is running correctly.  Now, use one of the following methods to access it from Windows:
+
+#### Option 1:  
+
+```
+hostname -I
+```
+Get the WSL Host IP printed by the above command, and access the site using:
+
+```
+http://172.19.164.229:30276
+```
+
+#### Option 2:  
+
+```
+sudo kubectl port-forward deployment/nginx 8080:80
+```
+
+Then, from Windows, access the site as:
+
+```
+http://localhost:8080
+```
 
 ### Concepts
 - **Node**: The physical or virtual worker machine that runs the workloads.
